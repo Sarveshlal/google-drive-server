@@ -1,6 +1,10 @@
 const express = require("express");
 const app = express();
 app.use(express.json());
+const nodemailer = require("nodemailer");
+const url = require("url");
+const cors = require("cors");
+app.use(cors());
 const mongodb = require("mongodb");
 const mongoClient = mongodb.MongoClient;
 let dburl =
@@ -9,10 +13,10 @@ const bcriptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 let port = process.env.PORT || 8080;
 let users = [];
-let mailgun_apikey = "7358ad28f856cfd65979e48379e88998-6e0fd3a4-51f66c99";
-const mailgun = require("mailgun-js");
-const DOMAIN = "sandbox6ed57b4503d64bfb81cbf50d807cfea2.mailgun.org";
-const mg = mailgun({ apiKey: mailgun_apikey, domain: DOMAIN });
+// let mailgun_apikey = "7358ad28f856cfd65979e48379e88998-6e0fd3a4-51f66c99";
+// const mailgun = require("mailgun-js");
+// const DOMAIN = "sandbox6ed57b4503d64bfb81cbf50d807cfea2.mailgun.org";
+// const mg = mailgun({ apiKey: mailgun_apikey, domain: DOMAIN });
 let private_key = "1234f";
 
 app.post("/registration", async (req, res) => {
@@ -26,26 +30,35 @@ app.post("/registration", async (req, res) => {
       });
     } else {
       let token = jwt.sign({ email: req.body.email }, private_key, {
-        expiresIn: "30m",
+        expiresIn: "1m",
       });
       console.log(token);
-      const data = {
-        from: "no-reply@hello.com",
-        to: req.body.email,
-        subject: "Link for activating your account",
-        html: `
-          <h2>Please click this link to Activate your Account</h2>
-          <p><a href="http://localhost:3000/login">${url}/authenticate/${token}</a></p>`,
-      };
-      mg.messages().send(data, function (error, body) {
-        console.log(body);
+      var transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: "sarveshlalacc2@gmail.com",
+          pass: "Sarvesh@05",
+        },
       });
-      let salt = await bcriptjs.genSalt(10);
-      let hash = await bcriptjs.hash(req.body.password, salt);
-      req.body.password = hash;
-      console.log(hash);
-      let resp = await db.collection("user").insertOne(req.body);
-      client.close();
+      var mailOptions = {
+        from: "sarveshlal@gmail.com",
+        to: req.body.email,
+        subject: "Activation Link",
+        html: `
+          <h2>Please click this link to Reset your Password</h2>
+          <p><a href="https://gdrive-client.netlify.app/">https://gdrive-client.netlify.app/${token}</a></p>
+        `,
+      };
+      transporter.sendMail(mailOptions, function (err, data) {
+        if (err) console.log(err);
+        else console.log("Email sent: " + data.response);
+      });
+      // let salt = await bcriptjs.genSalt(10);
+      // let hash = await bcriptjs.hash(req.body.password, salt);
+      // req.body.password = hash;
+      // console.log(hash);
+      // let resp = await db.collection("user").insertOne(req.body);
+      // client.close();
       res.json({
         message: "record Inserted",
       });
@@ -103,11 +116,12 @@ app.post("/forget", async (req, res) => {
         subject: "Link for activating your account",
         html: `
           <h2>Please click this link to Reset your Password</h2>
-          <p><a href="http://localhost:3000/reset/${req.body.email}">${url}/password/reset/${token}</a></p>`,
+          <p><a href="http://localhost:3000/reset">${url}/password/reset/${token}</a></p>`,
       };
       mg.messages().send(data, function (error, body) {
         console.log(body);
       });
+      localStorage.setItem("token", token);
     }
   } catch (err) {
     console.log(err);
@@ -117,7 +131,7 @@ app.post("/forget", async (req, res) => {
   }
 });
 
-app.put("/reset/:email", async (req, res) => {
+app.put("/reset", async (req, res) => {
   try {
     let client = await mongoClient.connect(dburl);
     let db = client.db("drive");
