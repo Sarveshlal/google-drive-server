@@ -53,12 +53,12 @@ app.post("/registration", async (req, res) => {
         if (err) console.log(err);
         else console.log("Email sent: " + data.response);
       });
-      // let salt = await bcriptjs.genSalt(10);
-      // let hash = await bcriptjs.hash(req.body.password, salt);
-      // req.body.password = hash;
-      // console.log(hash);
-      // let resp = await db.collection("user").insertOne(req.body);
-      // client.close();
+      let salt = await bcriptjs.genSalt(10);
+      let hash = await bcriptjs.hash(req.body.password, salt);
+      req.body.password = hash;
+      console.log(hash);
+      let resp = await db.collection("user").insertOne(req.body);
+      client.close();
       res.json({
         message: "record Inserted",
       });
