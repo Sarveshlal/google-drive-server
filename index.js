@@ -198,7 +198,7 @@ app.put("/reset", async (req, res) => {
 
 app.get("/users", async (req, res) => {
   try {
-    let client = await mongoClient.connect(urldb);
+    let client = await mongoClient.connect(dburl);
     let db = client.db("drive");
     const userlist = await db.collection("user").find().toArray();
     client.close();
