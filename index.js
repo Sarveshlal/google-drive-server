@@ -71,11 +71,49 @@ app.post("/registration", async (req, res) => {
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/aclogin", async (req, res) => {
   try {
     let client = await mongoClient.connect(dburl);
     let db = client.db("drive");
     let user = await db.collection("user").findOne({ email: req.body.email });
+    if (user) {
+      let result = await bcriptjs.compare(req.body.password, user.password);
+      console.log(result);
+      await db
+        .collection("user")
+        .updateOne(
+          { email: req.body.email },
+          { $set: { status: "active" } },
+          { upsert: true }
+        );
+      if (result) {
+        res.json({
+          message: "allow user",
+        });
+      } else {
+        res.json({
+          message: "invalid credentials",
+        });
+      }
+    } else {
+      res.json({
+        message: "no records",
+      });
+    }
+  } catch {
+    res.json({
+      message: "something went wrong",
+    });
+  }
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    let client = await mongoClient.connect(dburl);
+    let db = client.db("drive");
+    let user = await db
+      .collection("user")
+      .findOne({ $and: [{ email: req.body.email }, { status: "active" }] });
     if (user) {
       let result = await bcriptjs.compare(req.body.password, user.password);
       console.log(result);
@@ -116,7 +154,7 @@ app.post("/forget", async (req, res) => {
         subject: "Link for activating your account",
         html: `
           <h2>Please click this link to Reset your Password</h2>
-          <p><a href="http://localhost:3000/reset">${url}/password/reset/${token}</a></p>`,
+          <p><a href="https://gdrive-client.netlify.app/reset">https://gdrive-client.netlify.app/password/reset/${token}</a></p>`,
       };
       mg.messages().send(data, function (error, body) {
         console.log(body);
