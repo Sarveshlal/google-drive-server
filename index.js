@@ -46,7 +46,7 @@ app.post("/registration", async (req, res) => {
         subject: "Activation Link",
         html: `
           <h2>Please click this link to Reset your Password</h2>
-          <p><a href="https://gdrive-client.netlify.app/">https://gdrive-client.netlify.app/${token}</a></p>
+          <p><a href="https://gdrive-client.netlify.app/aclogin">https://gdrive-client.netlify.app/${token}</a></p>
         `,
       };
       transporter.sendMail(mailOptions, function (err, data) {
@@ -128,7 +128,8 @@ app.post("/login", async (req, res) => {
       }
     } else {
       res.json({
-        message: "no records",
+        message:
+          "Account Unavailable or Account is Disabled please Activate your Account",
       });
     }
   } catch {
@@ -145,19 +146,28 @@ app.post("/forget", async (req, res) => {
     let exists = await db.collection("user").findOne({ email: req.body.email });
     if (exists) {
       let token = jwt.sign({ email: req.body.email }, private_key, {
-        expiresIn: "30m",
+        expiresIn: "1m",
       });
       console.log(token);
-      const data = {
-        from: "no-reply@hello.com",
+      var transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: "sarveshlalacc2@gmail.com",
+          pass: "Sarvesh@05",
+        },
+      });
+      var mailOptions = {
+        from: "sarveshlal@gmail.com",
         to: req.body.email,
-        subject: "Link for activating your account",
+        subject: "Activation Link",
         html: `
           <h2>Please click this link to Reset your Password</h2>
-          <p><a href="https://gdrive-client.netlify.app/reset">https://gdrive-client.netlify.app/password/reset/${token}</a></p>`,
+          <p><a href="https://gdrive-client.netlify.app/reset">https://gdrive-client.netlify.app/${token}</a></p>
+        `,
       };
-      mg.messages().send(data, function (error, body) {
-        console.log(body);
+      transporter.sendMail(mailOptions, function (err, data) {
+        if (err) console.log(err);
+        else console.log("Email sent: " + data.response);
       });
       localStorage.setItem("token", token);
     }
