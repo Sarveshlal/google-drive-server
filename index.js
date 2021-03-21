@@ -13,10 +13,7 @@ const bcriptjs = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 let port = process.env.PORT || 8080;
 let users = [];
-// let mailgun_apikey = "7358ad28f856cfd65979e48379e88998-6e0fd3a4-51f66c99";
-// const mailgun = require("mailgun-js");
-// const DOMAIN = "sandbox6ed57b4503d64bfb81cbf50d807cfea2.mailgun.org";
-// const mg = mailgun({ apiKey: mailgun_apikey, domain: DOMAIN });
+
 let private_key = "1234f";
 
 app.post("/registration", async (req, res) => {
@@ -30,7 +27,7 @@ app.post("/registration", async (req, res) => {
       });
     } else {
       let token = jwt.sign({ email: req.body.email }, private_key, {
-        expiresIn: "1m",
+        expiresIn: "5m",
       });
       console.log(token);
       var transporter = nodemailer.createTransport({
@@ -111,25 +108,31 @@ app.post("/login", async (req, res) => {
   try {
     let client = await mongoClient.connect(dburl);
     let db = client.db("drive");
-    let user = await db
-      .collection("user")
-      .findOne({ $and: [{ email: req.body.email }, { status: "active" }] });
-    if (user) {
-      let result = await bcriptjs.compare(req.body.password, user.password);
-      console.log(result);
-      if (result) {
-        res.json({
-          message: "allow user",
-        });
+    let users = await db.collection("user").findOne({ email: req.body.email });
+    if (users) {
+      let user = await db
+        .collection("user")
+        .findOne({ $and: [{ email: req.body.email }, { status: "active" }] });
+      if (user) {
+        let result = await bcriptjs.compare(req.body.password, user.password);
+        console.log(result);
+        if (result) {
+          res.json({
+            message: "allow user",
+          });
+        } else {
+          res.json({
+            message: "invalid credentials",
+          });
+        }
       } else {
-        res.json({
-          message: "invalid credentials",
+        req.json({
+          message: "Account is Disabled please Check your mail.",
         });
       }
     } else {
       res.json({
-        message:
-          "Account Unavailable or Account is Disabled please Activate your Account",
+        message: "Account Unavailable",
       });
     }
   } catch {
@@ -146,7 +149,7 @@ app.post("/forget", async (req, res) => {
     let exists = await db.collection("user").findOne({ email: req.body.email });
     if (exists) {
       let token = jwt.sign({ email: req.body.email }, private_key, {
-        expiresIn: "1m",
+        expiresIn: "5m",
       });
       console.log(token);
       var transporter = nodemailer.createTransport({
@@ -170,12 +173,21 @@ app.post("/forget", async (req, res) => {
         else console.log("Email sent: " + data.response);
       });
       localStorage.setItem("token", token);
+      res.json({
+        message: "Email sent",
+      });
+    } else {
+      res.json({
+        message: "user not found",
+      });
     }
   } catch (err) {
     console.log(err);
     res.json({
       message: "Something Went Wrong",
     });
+  } finally {
+    client.close();
   }
 });
 
