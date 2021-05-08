@@ -33,8 +33,8 @@ app.post("/registration", async (req, res) => {
       var transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: "sarveshlalacc2@gmail.com",
-          pass: "Sarvesh@05",
+          user: "sarveshlal05@gmail.com",
+          pass: "Hpnotebook@05",
         },
       });
       var mailOptions = {
